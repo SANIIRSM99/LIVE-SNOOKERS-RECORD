@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+  <head>
+    <meta charset="UTF-8">
+    <title>Untitled</title>
+    
+
+  </head>
+    
+  <body>
+  <!DOCTYPE html>
+<html lang="ur">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Snooker Tables - Manager Monitor (سرور)</title>
+
+  <!-- Firebase SDK v10 compat (تمہارا config v9+ ہے، لیکن compat ورژن استعمال کر رہے ہیں) -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
+
+  <style>
+    body {
+      margin: 0;
+      padding: 15px;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    }
+    h1 {
+      text-align: center;
+      color: #ffd700;
+      margin: 10px 0 25px;
+      font-size: 2.1rem;
+      letter-spacing: 1px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 18px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+    .card {
+      background: #181818;
+      border-radius: 10px;
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.6);
+      border: 1px solid #333;
+      transition: all 0.18s ease;
+    }
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.7);
+    }
+    .busy {
+      border-color: #e63946;
+      background: linear-gradient(135deg, #2d0005, #180000);
+    }
+    .free {
+      border-color: #2a9d8f;
+      background: linear-gradient(135deg, #0a2a24, #001a14);
+    }
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 1.5rem;
+      color: #ffd700;
+    }
+    .status {
+      font-weight: bold;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+    .busy .status { color: #ff6b6b; }
+    .free  .status { color: #90ff9e; }
+    .info-line {
+      margin: 6px 0;
+      font-size: 1.05rem;
+    }
+    .player-line {
+      font-size: 1.1rem;
+      margin: 4px 0;
+    }
+    .vs {
+      color: #aaa;
+      font-size: 0.95rem;
+      margin: 4px 0;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #444;
+      margin: 14px 0;
+    }
+    .time {
+      color: #bbb;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+<h1>Snooker Tables - Live Manager Monitor</h1>
+
+<div class="grid" id="tables-grid"></div>
+
+<script>
+// ────────────────────────────── تمہارا Firebase Config ──────────────────────────────
+const firebaseConfig = {
+  apiKey:            "AIzaSyDjF_POrbldRLFGTYqbhVB7DO2f_PVNIiU",
+  authDomain:        "snooker-13eba.firebaseapp.com",
+  databaseURL:       "https://snooker-13eba-default-rtdb.firebaseio.com",
+  projectId:         "snooker-13eba",
+  storageBucket:     "snooker-13eba.firebasestorage.app",
+  messagingSenderId: "798005790037",
+  appId:             "1:798005790037:web:70222de563a0803b285bdc",
+  measurementId:     "G-ME8ZK3K0RV"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+// const analytics = firebase.analytics();   // اگر چاہیے تو
+
+const db = firebase.database();
+
+const grid = document.getElementById("tables-grid");
+
+// ────────────────────────────── Real-time listen ──────────────────────────────
+db.ref("tables").on("value", (snapshot) => {
+  grid.innerHTML = "";
+
+  // اگر کوئی ٹیبل نہیں تو پیغام
+  if (!snapshot.exists() || snapshot.numChildren() === 0) {
+    grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:40px; color:#888; font-size:1.3rem;">ابھی تک کوئی ٹیبل استعمال نہیں ہوا</div>';
+    return;
+  }
+
+  snapshot.forEach((child) => {
+    const tableNum = child.key;
+    const data     = child.val() || {};
+
+    const card = document.createElement("div");
+    card.className = `card ${data.status === "busy" ? "busy" : "free"}`;
+
+    let html = `
+      <h2>ٹیبل ${tableNum}</h2>
+      <div class="status">${data.status === "busy" ? "مصروف" : "خالی"}</div>
+      <div class="info-line">کل گیمز کھیلی گئیں: <strong>${data.gamesPlayed || 0}</strong></div>
+    `;
+
+    if (data.totalPlayerWins && Object.keys(data.totalPlayerWins).length > 0) {
+      html += `<div class="info-line">سب سے زیادہ جیتنے والے:</div><ul style="margin:6px 0 12px 24px; padding:0; color:#ccc;">`;
+      Object.entries(data.totalPlayerWins)
+        .sort((a,b) => b[1] - a[1])
+        .slice(0,4)
+        .forEach(([name, wins]) => {
+          html += `<li>${name} — ${wins} جیت</li>`;
+        });
+      html += `</ul>`;
+    }
+
+    if (data.currentGame) {
+      const g = data.currentGame;
+
+      html += `
+        <hr>
+        <div style="font-size:1.15rem; margin-bottom:8px;">موجودہ میچ</div>
+        <div class="player-line"><strong>${g.player1?.name || "؟؟؟"}</strong> <span style="color:#aaa;">(${g.player1?.score || 0})</span></div>
+        <div class="vs">VS</div>
+        <div class="player-line"><strong>${g.player2?.name || "؟؟؟"}</strong> <span style="color:#aaa;">(${g.player2?.score || 0})</span></div>
+        <div class="info-line">باقی ریڈز: <strong>${g.redsRemaining ?? "?"}</strong></div>
+        <div class="info-line">فیز: <strong>${g.isRedPhase ? "ریڈز" : "کلرز"}</strong></div>
+        <div class="time">شروع وقت: ${g.startTime ? new Date(g.startTime).toLocaleString("ur-PK") : "—"}</div>
+      `;
+    }
+
+    card.innerHTML = html;
+    grid.appendChild(card);
+  });
+});
+</script>
+
+</body>
+</html>
+    
+  </body>
+  
+</html>
