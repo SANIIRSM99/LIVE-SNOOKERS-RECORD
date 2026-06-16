@@ -1,243 +1,575 @@
 <!DOCTYPE html>
 <html lang="en">
-
-  <head>
-    <meta charset="UTF-8">
-    <title>SNOOKERS  LIVE DATA WITH CASH</title>
-    
-
-  </head>
-    
-  <body>
-  <!DOCTYPE html>
-<html lang="ur">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Snooker Tables - Manager Monitor</title>
-
+  <title>Snooker Tables - Live Manager Monitor</title>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-
   <style>
-    body { margin:0; padding:20px; background:#0a0a0a; color:#e0e0e0; font-family:Segoe UI, sans-serif; }
+    :root { color-scheme: dark; }
+    body { margin:0; padding:20px; background:#0a0a0a; color:#e0e0e0; font-family:Segoe UI, Arial, sans-serif; }
     h1 { text-align:center; color:#ffd700; margin:10px 0 20px; font-size:2.3rem; }
-    #wallet-box {
-      background:#1e3a2e; border:2px solid #4ade80; border-radius:12px;
-      padding:20px; margin:0 auto 30px; max-width:500px; text-align:center;
-      box-shadow:0 6px 20px rgba(74,222,128,0.3);
-    }
+    button, input { font-family:inherit; }
+    .top-actions { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+    .nav-btn, .receive-btn { background:#2a9d8f; color:white; border:none; padding:12px 22px; font-size:1rem; border-radius:8px; cursor:pointer; font-weight:700; }
+    .nav-btn.secondary { background:#374151; }
+    .nav-btn:hover, .receive-btn:hover { filter:brightness(1.08); }
+    #wallet-box { background:#1e3a2e; border:2px solid #4ade80; border-radius:12px; padding:20px; margin:0 auto 30px; max-width:560px; text-align:center; box-shadow:0 6px 20px rgba(74,222,128,0.3); }
     #wallet-amount { font-size:2.8rem; font-weight:bold; color:#a3ffba; margin:10px 0; }
-    .receive-btn {
-      background:#2a9d8f; color:white; border:none; padding:12px 24px;
-      font-size:1.1rem; border-radius:8px; cursor:pointer; margin-top:12px;
-    }
-    .receive-btn:hover { background:#238c7e; }
     h2.section-title { text-align:center; margin:25px 0 15px; font-size:1.7rem; padding-bottom:6px; border-bottom:2px solid; }
     .free-section h2 { color:#90ff9e; border-bottom-color:#4ade80; }
     .busy-section h2 { color:#ff6b6b; border-bottom-color:#e63946; }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; max-width:1800px; margin:0 auto 40px; }
-    .card {
-      background:#181818; border-radius:12px; padding:20px; box-shadow:0 6px 16px rgba(0,0,0,0.7);
-      border:2px solid; position:relative; transition:all 0.2s;
-    }
-    .card:hover { transform:translateY(-5px); box-shadow:0 12px 28px rgba(0,0,0,0.8); }
+    .card { background:#181818; border-radius:12px; padding:20px; box-shadow:0 6px 16px rgba(0,0,0,0.7); border:2px solid; position:relative; transition:all 0.2s; }
+    .card:hover { transform:translateY(-3px); box-shadow:0 12px 28px rgba(0,0,0,0.8); }
     .busy { border-color:#e63946; background:linear-gradient(145deg,#2d0005,#180000); }
-    .free  { border-color:#4ade80; background:linear-gradient(145deg,#0f2e1f,#0a2418); }
-    .cash-box {
-      margin-top:12px; padding:10px; background:rgba(255,255,255,0.08); border-radius:8px;
-      text-align:center; font-size:1.15rem;
-    }
-    .collect-btn {
-      background:#e63946; color:white; border:none; padding:10px 16px;
-      border-radius:6px; cursor:pointer; font-size:1rem; font-weight:bold;
-      margin-top:10px; display:block; width:100%;
-    }
-    .collect-btn:hover { background:#c53039; }
-    .unlock-btn {
-      position:absolute; top:12px; right:12px; background:#e63946; color:white;
-      border:none; padding:6px 12px; border-radius:6px; cursor:pointer;
-      font-size:0.9rem; font-weight:bold;
-    }
-    .unlock-btn:hover { background:#c53039; }
-    .empty-message {
-      grid-column:1/-1; text-align:center; padding:50px 20px; color:#777;
-      font-size:1.4rem; background:#222; border-radius:12px; border:1px dashed #444;
-    }
+    .free { border-color:#4ade80; background:linear-gradient(145deg,#0f2e1f,#0a2418); }
+    .status { font-weight:800; margin-bottom:10px; }
+    .info-line, .player-line, .time { margin:6px 0; line-height:1.35; }
+    .cash-box { margin-top:12px; padding:12px; background:rgba(255,255,255,0.08); border-radius:8px; text-align:center; font-size:1.05rem; }
+    .cash-input-row { display:flex; gap:8px; align-items:center; margin-top:10px; }
+    .cash-input-row input { flex:1; min-width:0; padding:10px; border-radius:6px; border:1px solid #4b5563; background:#111827; color:white; font-size:1rem; }
+    .collect-btn { background:#e63946; color:white; border:none; padding:10px 14px; border-radius:6px; cursor:pointer; font-size:0.95rem; font-weight:bold; white-space:nowrap; }
+    .collect-btn:hover, .unlock-btn:hover { background:#c53039; }
+    .unlock-btn { position:absolute; top:12px; right:12px; background:#e63946; color:white; border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-size:0.9rem; font-weight:bold; }
+    .empty-message { grid-column:1/-1; text-align:center; padding:50px 20px; color:#777; font-size:1.4rem; background:#222; border-radius:12px; border:1px dashed #444; }
+    .score-list { margin:8px 0 10px 18px; padding:0; }
+    .current-game { margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.2); }
+    .current-game-title { color:#ffd700; font-size:1.2rem; font-weight:800; margin-bottom:8px; }
+    .hidden { display:none; }
+    #reports-page { max-width:1500px; margin:0 auto; }
+    .report-controls { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:12px 0 18px; }
+    .report-controls input, .report-controls select { padding:10px; border-radius:8px; border:1px solid #4b5563; background:#111827; color:white; }
+    .summary-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; max-width:1100px; margin:0 auto 18px; }
+    .summary-card { background:#111827; border:1px solid #374151; border-radius:10px; padding:14px; text-align:center; box-shadow:0 10px 26px rgba(0,0,0,0.25); }
+    .summary-card strong { display:block; font-size:1.8rem; color:#ffd700; margin-top:4px; }
+    .pagination { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:16px 0; }
+    .page-btn { width:auto; min-width:42px; padding:9px 12px; margin:0; border-radius:8px; background:#1f2937; color:white; border:1px solid #374151; cursor:pointer; }
+    .page-btn.active { background:#2a9d8f; border-color:#4ade80; }
+    table { width:100%; border-collapse:collapse; background:#111; border-radius:10px; overflow:hidden; }
+    th, td { padding:10px; border:1px solid #333; text-align:left; vertical-align:top; }
+    th { background:#1f2937; color:#ffd700; }
+    tr:nth-child(even) { background:#171717; }
+    #toast { position:fixed; right:20px; bottom:20px; z-index:9999; display:grid; gap:10px; }
+    .toast-item { min-width:280px; padding:14px 16px; background:linear-gradient(145deg,#111827,#0b1220); border:1px solid #4ade80; border-left:5px solid #4ade80; border-radius:10px; color:white; box-shadow:0 14px 35px rgba(0,0,0,0.45); animation:toast-in .22s ease-out; font-weight:700; }
+    .toast-item.error { border-color:#ef4444; }
+    @keyframes toast-in { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
   </style>
 </head>
 <body>
+  <h1>Snooker Tables - Live Manager Monitor</h1>
 
-<h1>Snooker Tables - Live Manager Monitor</h1>
+  <div class="top-actions">
+    <button class="nav-btn" onclick="showDashboard()">Dashboard</button>
+    <button class="nav-btn secondary" onclick="showReports()">Reports</button>
+  </div>
 
-<div id="wallet-box">
-  <div style="font-size:1.3rem; color:#ccc;">کل والٹ (Total Cash Collected)</div>
-  <div id="wallet-amount">Rs. 0</div>
-  <button class="receive-btn" onclick="receiveAllCash()">Receive / Clear Wallet</button>
-</div>
-
-<div class="free-section">
-  <h2 class="section-title">خالی ٹیبلز (Free Tables)</h2>
-  <div class="grid" id="free-tables-grid"></div>
-</div>
-
-<div class="busy-section">
-  <h2 class="section-title">مصروف ٹیبلز (Busy Tables)</h2>
-  <div class="grid" id="busy-tables-grid"></div>
-</div>
-
-<script>
-// ────────────────────────────── Firebase Config ──────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyDjF_POrbldRLFGTYqbhVB7DO2f_PVNIiU",
-  authDomain: "snooker-13eba.firebaseapp.com",
-  databaseURL: "https://snooker-13eba-default-rtdb.firebaseio.com",
-  projectId: "snooker-13eba",
-  storageBucket: "snooker-13eba.firebasestorage.app",
-  messagingSenderId: "798005790037",
-  appId: "1:798005790037:web:70222de563a0803b285bdc",
-  measurementId: "G-ME8ZK3K0RV"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-const TOTAL_TABLES = 15;
-const freeGrid = document.getElementById("free-tables-grid");
-const busyGrid = document.getElementById("busy-tables-grid");
-const walletAmountEl = document.getElementById("wallet-amount");
-
-// والٹ real-time
-db.ref("wallet").on("value", (snap) => {
-  const amount = snap.val() || 0;
-  walletAmountEl.textContent = `Rs. ${amount.toLocaleString()}`;
-});
-
-// ٹیبلز real-time
-db.ref("tables").on("value", (snapshot) => {
-  freeGrid.innerHTML = "";
-  busyGrid.innerHTML = "";
-
-  let freeCount = 0;
-  let busyCount = 0;
-  let knownTables = new Set();
-
-  snapshot.forEach((child) => {
-    const tableNum = parseInt(child.key);
-    knownTables.add(tableNum);
-    const data = child.val() || {};
-
-    const card = createTableCard(tableNum, data);
-
-    if (data.status === "busy") {
-      busyGrid.appendChild(card);
-      busyCount++;
-    } else {
-      freeGrid.appendChild(card);
-      freeCount++;
-    }
-  });
-
-  for (let i = 1; i <= TOTAL_TABLES; i++) {
-    if (!knownTables.has(i)) {
-      const card = createTableCard(i, { status: "free", gamesPlayed: 0 });
-      freeGrid.appendChild(card);
-      freeCount++;
-    }
-  }
-
-  if (freeCount === 0) freeGrid.innerHTML = '<div class="empty-message">کوئی خالی ٹیبل نہیں</div>';
-  if (busyCount === 0) busyGrid.innerHTML = '<div class="empty-message">کوئی مصروف ٹیبل نہیں</div>';
-});
-
-function createTableCard(num, data) {
-  const card = document.createElement("div");
-  card.className = `card ${data.status === "busy" ? "busy" : "free"}`;
-
-  const games = data.gamesPlayed || 0;
-  const cashDue = games * 100;
-
-  let html = `
-    <h2>ٹیبل ${num}</h2>
-    <div class="status">${data.status === "busy" ? "مصروف" : "خالی"}</div>
-    <div class="info-line">کل گیمز: <strong>${games}</strong></div>
-    <div class="cash-box">
-      <div>واجب الادا کیش: <strong>Rs. ${cashDue.toLocaleString()}</strong></div>
+  <main id="dashboard-page">
+    <div id="wallet-box">
+      <div style="font-size:1.3rem; color:#ccc;">Total Cash Collected</div>
+      <div id="wallet-amount">Rs. 0</div>
+      <button class="receive-btn" onclick="receiveAllCash()">Receive / Clear Wallet</button>
     </div>
-  `;
 
-  if (games > 0) {
-    html += `
-      <button class="collect-btn" onclick="collectCash(${num}, ${games})">
-        Cash Collect (Rs. ${cashDue.toLocaleString()})
-      </button>
-    `;
-  }
+    <div class="free-section">
+      <h2 class="section-title">Free Tables</h2>
+      <div class="grid" id="free-tables-grid"></div>
+    </div>
 
-  if (data.status === "busy") {
-    html += `
-      <button class="unlock-btn" onclick="unlockTable(${num})">
-        Unlock / Free
-      </button>
-    `;
-  }
+    <div class="busy-section">
+      <h2 class="section-title">Busy Tables</h2>
+      <div class="grid" id="busy-tables-grid"></div>
+    </div>
+  </main>
 
-  card.innerHTML = html;
-  return card;
-}
+  <main id="reports-page" class="hidden">
+    <h2 class="section-title" style="color:#ffd700;border-bottom-color:#ffd700;">Reports</h2>
+    <div class="report-controls">
+      <label>From <input type="date" id="report-from"></label>
+      <label>To <input type="date" id="report-to"></label>
+      <label>Game
+        <select id="report-type">
+          <option value="all">All Games</option>
+          <option value="snooker">Snooker</option>
+          <option value="century">Century</option>
+          <option value="fifty">Fifty</option>
+          <option value="cash">Cash Collection</option>
+        </select>
+      </label>
+      <label>Table
+        <select id="report-table">
+          <option value="all">All Tables</option>
+        </select>
+      </label>
+      <button class="nav-btn" onclick="loadReports()">Load Report</button>
+    </div>
+    <div id="reports-cards" class="summary-grid"></div>
+    <div id="reports-summary" class="cash-box"></div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Table</th>
+            <th>Game</th>
+            <th>Players</th>
+            <th>Start</th>
+            <th>End</th>
+            <th>Duration</th>
+            <th>Winner</th>
+            <th>Loser</th>
+            <th>Cash</th>
+          </tr>
+        </thead>
+        <tbody id="reports-body"></tbody>
+      </table>
+    </div>
+    <div id="reports-pagination" class="pagination"></div>
+  </main>
 
-// Cash Collect → گیمز صفر + والٹ میں شامل
-window.collectCash = function(tableNumber, gamesCount) {
-  if (!confirm(`ٹیبل ${tableNumber} کی تمام ${gamesCount} گیمز کا کیش (Rs. ${gamesCount * 100}) جمع کرنا ہے؟`)) {
-    return;
-  }
+  <div id="toast"></div>
 
-  const tableRef = db.ref(`tables/${tableNumber}`);
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyDjF_POrbldRLFGTYqbhVB7DO2f_PVNIiU",
+      authDomain: "snooker-13eba.firebaseapp.com",
+      databaseURL: "https://snooker-13eba-default-rtdb.firebaseio.com",
+      projectId: "snooker-13eba",
+      storageBucket: "snooker-13eba.firebasestorage.app",
+      messagingSenderId: "798005790037",
+      appId: "1:798005790037:web:70222de563a0803b285bdc",
+      measurementId: "G-ME8ZK3K0RV"
+    };
 
-  tableRef.transaction((data) => {
-    if (!data) return data;
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const TOTAL_TABLES = 15;
+    const freeGrid = document.getElementById("free-tables-grid");
+    const busyGrid = document.getElementById("busy-tables-grid");
+    const walletAmountEl = document.getElementById("wallet-amount");
+    let latestTables = null;
+    let reportDisplayRows = [];
+    let reportCurrentPage = 1;
+    const REPORT_PAGE_SIZE = 10;
 
-    const amountToAdd = (data.gamesPlayed || 0) * 100;
+    initDates();
+    runDailyReset();
 
-    // والٹ میں اضافہ
-    db.ref("wallet").transaction((wallet) => (wallet || 0) + amountToAdd);
+    db.ref("wallet").on("value", (snap) => {
+      const amount = snap.val() || 0;
+      walletAmountEl.textContent = `Rs. ${Number(amount).toLocaleString()}`;
+    });
 
-    // ٹیبل کی گیمز صفر
-    data.gamesPlayed = 0;
+    db.ref("tables").on("value", (snapshot) => {
+      latestTables = snapshot;
+      renderTables(snapshot);
+    });
 
-    return data;
-  }).then(() => {
-    alert(`ٹیبل ${tableNumber} کا کیش جمع ہو گیا اور گیمز صفر ہو گئیں`);
-  }).catch(err => {
-    alert("مسئلہ: " + err.message);
-  });
-};
+    function localDateKey(date = new Date()) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
 
-// Unlock ٹیبل
-window.unlockTable = function(tableNumber) {
-  if (!confirm(`ٹیبل ${tableNumber} کو free کرنا ہے؟`)) return;
+    function initDates() {
+      const today = localDateKey();
+      const firstDay = new Date();
+      firstDay.setDate(1);
+      document.getElementById("report-from").value = localDateKey(firstDay);
+      document.getElementById("report-to").value = today;
+      const tableSelect = document.getElementById("report-table");
+      for (let i = 1; i <= TOTAL_TABLES; i++) {
+        const option = document.createElement("option");
+        option.value = String(i);
+        option.textContent = `Table ${i}`;
+        tableSelect.appendChild(option);
+      }
+    }
 
-  db.ref(`tables/${tableNumber}`).update({
-    status: "free",
-    currentGame: null
-  }).then(() => {
-    alert(`ٹیبل ${tableNumber} free ہو گیا`);
-  }).catch(err => alert("مسئلہ: " + err.message));
-};
+    function toast(message, isError = false) {
+      const item = document.createElement("div");
+      item.className = `toast-item ${isError ? "error" : ""}`;
+      item.textContent = message;
+      document.getElementById("toast").appendChild(item);
+      setTimeout(() => item.remove(), 3200);
+    }
 
-// والٹ ریسیو / کلیئر
-window.receiveAllCash = function() {
-  if (!confirm("کیا والٹ کا پورا بیلنس ریسیو کر کے صفر کرنا ہے؟")) return;
+    function showDashboard() {
+      document.getElementById("dashboard-page").classList.remove("hidden");
+      document.getElementById("reports-page").classList.add("hidden");
+    }
 
-  db.ref("wallet").set(0).then(() => {
-    alert("والٹ صفر کر دیا گیا (ریسیوڈ)");
-  }).catch(err => alert("مسئلہ: " + err.message));
-};
-</script>
+    function showReports() {
+      document.getElementById("dashboard-page").classList.add("hidden");
+      document.getElementById("reports-page").classList.remove("hidden");
+      loadReports();
+    }
+
+    function runDailyReset() {
+      const today = localDateKey();
+      db.ref("settings/currentBusinessDate").once("value").then((dateSnap) => {
+        if (dateSnap.val() === today) return;
+        db.ref("settings/currentBusinessDate").set(today);
+        return db.ref("tables").once("value").then((snap) => {
+          const updates = {};
+          snap.forEach((child) => {
+            updates[`tables/${child.key}/gamesPlayed`] = 0;
+            updates[`tables/${child.key}/currentGame`] = null;
+            updates[`tables/${child.key}/totalPlayerWins`] = null;
+            updates[`tables/${child.key}/totalPlayerLosses`] = null;
+            updates[`tables/${child.key}/lastCollectedGames`] = 0;
+            updates[`tables/${child.key}/lastCollectedAmount`] = 0;
+            updates[`tables/${child.key}/pendingGames`] = 0;
+            updates[`tables/${child.key}/pendingCashRequired`] = false;
+          });
+          if (Object.keys(updates).length) db.ref().update(updates);
+        });
+      }).catch(err => toast("Daily reset problem: " + err.message, true));
+    }
+
+    function renderTables(snapshot) {
+      freeGrid.innerHTML = "";
+      busyGrid.innerHTML = "";
+      let freeCount = 0;
+      let busyCount = 0;
+      const knownTables = new Set();
+
+      snapshot.forEach((child) => {
+        const tableNum = parseInt(child.key, 10);
+        knownTables.add(tableNum);
+        const data = child.val() || {};
+        const card = createTableCard(tableNum, data);
+        if (data.status === "busy") {
+          busyGrid.appendChild(card);
+          busyCount++;
+        } else {
+          freeGrid.appendChild(card);
+          freeCount++;
+        }
+      });
+
+      for (let i = 1; i <= TOTAL_TABLES; i++) {
+        if (!knownTables.has(i)) {
+          freeGrid.appendChild(createTableCard(i, { status: "free", gamesPlayed: 0 }));
+          freeCount++;
+        }
+      }
+
+      if (freeCount === 0) freeGrid.innerHTML = '<div class="empty-message">No free table</div>';
+      if (busyCount === 0) busyGrid.innerHTML = '<div class="empty-message">No busy table</div>';
+    }
+
+    function createTableCard(num, data) {
+      const card = document.createElement("div");
+      card.className = `card ${data.status === "busy" ? "busy" : "free"}`;
+      const games = Math.max(Number(data.gamesPlayed || 0), Number(data.pendingGames || 0));
+      const pendingCashRequired = !!data.pendingCashRequired || games > 0;
+      const lastCollectedGames = Number(data.lastCollectedGames || 0);
+      const lastCollectedAmount = Number(data.lastCollectedAmount || 0);
+
+      let html = `
+        <h2>Table ${num}</h2>
+        <div class="status">${data.status === "busy" ? "Busy" : "Free"}</div>
+        <div class="info-line">Is table par <strong>${games}</strong> games ho chuki hain.</div>
+      `;
+
+      if (pendingCashRequired) {
+        html += `<div class="cash-box" style="border:1px solid #ffd700;color:#ffd700;">Session close ho chuka hai. Is table ka cash collect kar lo.</div>`;
+      }
+
+      if (lastCollectedGames > 0 && games === 0) {
+        html += `<div class="cash-box">Last collect: ${lastCollectedGames} games | Rs. ${lastCollectedAmount.toLocaleString()}</div>`;
+      }
+
+      if (data.currentGame) html += renderCurrentGame(data.currentGame);
+      html += `
+        <div class="cash-box">
+          <div><strong>Manual Cash Collection</strong></div>
+          <div>Pending games: <strong>${games}</strong></div>
+          <div class="cash-input-row">
+            <input type="number" min="0" id="cash-${num}" placeholder="${pendingCashRequired ? 'Enter cash received' : 'No pending games'}" ${pendingCashRequired ? '' : 'disabled'}>
+            <button class="collect-btn" onclick="collectCash(${num})" ${pendingCashRequired ? '' : 'disabled'}>Collect</button>
+          </div>
+        </div>
+      `;
+
+      if (data.status === "busy") {
+        html += `<button class="unlock-btn" onclick="unlockTable(${num})">Unlock / Free</button>`;
+      }
+
+      card.innerHTML = html;
+      return card;
+    }
+
+    function renderCurrentGame(g) {
+      let html = `
+        <div class="current-game">
+          <div class="current-game-title">Current Game</div>
+          <div class="info-line">Game: <strong>${g.gameLabel || g.gameType || "Snooker"}</strong></div>
+          <div class="info-line">Players: <strong>${g.playerCount || 2}</strong></div>
+          <div class="info-line">Turn: <strong>${g.currentPlayer || "?"}</strong></div>
+      `;
+
+      if (Array.isArray(g.players)) {
+        g.players.forEach(player => {
+          html += `<div class="player-line"><strong>${player.name}</strong>: ${player.score || 0} points | ${player.qualified ? "Qualified" : "Playing"}</div>`;
+        });
+      } else {
+        html += `
+          <div class="player-line"><strong>${g.player1?.name || "P1"}</strong>: ${g.player1?.score || 0} points | Wins: ${g.player1?.wins || 0}</div>
+          <div class="player-line"><strong>${g.player2?.name || "P2"}</strong>: ${g.player2?.score || 0} points | Wins: ${g.player2?.wins || 0}</div>
+          <div class="info-line">Remaining Reds: <strong>${g.redsRemaining ?? "?"}</strong></div>
+          <div class="info-line">Phase: <strong>${g.isRedPhase ? "Reds" : "Colors"}</strong></div>
+        `;
+      }
+
+      if (Array.isArray(g.tossAssignments)) {
+        html += `<div class="info-line">Toss: ${g.tossAssignments.map((x, i) => `${i + 1}. ${x.player}-${x.ball}`).join(" | ")}</div>`;
+      }
+
+      html += `<div class="time">Start: ${g.startTime ? new Date(g.startTime).toLocaleString() : "-"}</div></div>`;
+      return html;
+    }
+
+    window.collectCash = function(tableNumber) {
+      const input = document.getElementById(`cash-${tableNumber}`);
+      const amount = Number(input?.value || 0);
+      if (!amount || amount < 0) {
+        toast("Please enter cash amount for this table.", true);
+        input?.focus();
+        return;
+      }
+
+      db.ref(`tables/${tableNumber}`).transaction((data) => {
+        if (!data) return data;
+        const games = Math.max(Number(data.gamesPlayed || 0), Number(data.pendingGames || 0));
+        const collectedAt = new Date();
+        const cashReport = {
+          tableNumber: String(tableNumber),
+          games,
+          amount,
+          collectedAt: collectedAt.toISOString(),
+          collectedText: collectedAt.toLocaleString(),
+          createdAt: Date.now()
+        };
+        db.ref("wallet").transaction((wallet) => Number(wallet || 0) + amount);
+        db.ref(`cashReports/${localDateKey(collectedAt)}`).push(cashReport);
+        data.lastCollectedGames = games;
+        data.lastCollectedAmount = amount;
+        data.lastCollectedAt = collectedAt.toISOString();
+        data.gamesPlayed = 0;
+        data.pendingGames = 0;
+        data.pendingCashRequired = false;
+        data.currentGame = null;
+        data.totalPlayerWins = null;
+        data.totalPlayerLosses = null;
+        data.status = "free";
+        return data;
+      }).then(() => toast(`Table ${tableNumber}: cash collected Rs. ${amount.toLocaleString()}.`))
+        .catch(err => toast("Problem: " + err.message, true));
+    };
+
+    window.unlockTable = function(tableNumber) {
+      db.ref(`tables/${tableNumber}`).update({ status: "free", currentGame: null })
+        .then(() => toast(`Table ${tableNumber} is free.`))
+        .catch(err => toast("Problem: " + err.message, true));
+    };
+
+    window.receiveAllCash = function() {
+      db.ref("wallet").set(0).then(() => toast("Wallet cleared."))
+        .catch(err => toast("Problem: " + err.message, true));
+    };
+
+    async function loadReports() {
+      const from = document.getElementById("report-from").value || localDateKey();
+      const to = document.getElementById("report-to").value || from;
+      const typeFilter = document.getElementById("report-type").value || "all";
+      const tableFilter = document.getElementById("report-table").value || "all";
+      const body = document.getElementById("reports-body");
+      const summary = document.getElementById("reports-summary");
+      const cards = document.getElementById("reports-cards");
+      body.innerHTML = `<tr><td colspan="10">Loading report...</td></tr>`;
+      cards.innerHTML = "";
+
+      const dates = [];
+      let cursor = new Date(from + "T00:00:00");
+      const end = new Date(to + "T00:00:00");
+      while (cursor <= end) {
+        dates.push(localDateKey(cursor));
+        cursor.setDate(cursor.getDate() + 1);
+      }
+
+      const rows = [];
+      const cashRows = [];
+      for (const date of dates) {
+        const snap = await db.ref(`reports/${date}`).once("value");
+        snap.forEach((child) => {
+          const value = child.val() || {};
+          rows.push({ id: child.key, date, ...value });
+        });
+        const cashSnap = await db.ref(`cashReports/${date}`).once("value");
+        cashSnap.forEach((child) => {
+          const value = child.val() || {};
+          cashRows.push({ id: child.key, date, ...value });
+        });
+      }
+
+      const normalizeType = (row) => String(row.gameType || row.gameLabel || "snooker").toLowerCase();
+      const dedupeReports = (items) => {
+        const map = new Map();
+        items.forEach(row => {
+          const type = normalizeType(row);
+          const key = row.reportKey || [
+            row.tableNumber || "",
+            row.sessionId || "",
+            row.gameNumber || "",
+            type,
+            row.winner || "",
+            row.loser || "",
+            row.reason || ""
+          ].join("|");
+          const previous = map.get(key);
+          if (!previous || Number(row.createdAt || 0) >= Number(previous.createdAt || 0)) {
+            map.set(key, row);
+          }
+        });
+        return Array.from(map.values());
+      };
+      const uniqueRows = dedupeReports(rows);
+      const filteredGames = uniqueRows.filter(row => {
+        const type = normalizeType(row);
+        const tableOk = tableFilter === "all" || String(row.tableNumber || "") === tableFilter;
+        const typeOk = typeFilter === "all" || typeFilter === type;
+        return tableOk && typeOk;
+      });
+      const filteredCash = cashRows.filter(row => {
+        const tableOk = tableFilter === "all" || String(row.tableNumber || "") === tableFilter;
+        const typeOk = typeFilter === "all" || typeFilter === "cash";
+        return tableOk && typeOk;
+      });
+
+      filteredGames.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+      filteredCash.sort((a, b) => Number(b.createdAt || 0) - Number(a.createdAt || 0));
+
+      const counts = {
+        snooker: uniqueRows.filter(row => normalizeType(row) === "snooker").length,
+        century: uniqueRows.filter(row => normalizeType(row) === "century").length,
+        fifty: uniqueRows.filter(row => normalizeType(row) === "fifty").length
+      };
+      const filteredCounts = {
+        snooker: filteredGames.filter(row => normalizeType(row) === "snooker").length,
+        century: filteredGames.filter(row => normalizeType(row) === "century").length,
+        fifty: filteredGames.filter(row => normalizeType(row) === "fifty").length
+      };
+      const totalGames = filteredGames.length;
+      const totalCash = filteredCash.reduce((sum, row) => sum + Number(row.amount || 0), 0);
+      const tableCounts = {};
+      filteredGames.forEach(row => {
+        tableCounts[row.tableNumber] = (tableCounts[row.tableNumber] || 0) + 1;
+      });
+      filteredCash.forEach(row => {
+        if (!tableCounts[row.tableNumber]) tableCounts[row.tableNumber] = Number(row.games || 0);
+      });
+
+      cards.innerHTML = `
+        <div class="summary-card">Snooker<strong>${filteredCounts.snooker}</strong></div>
+        <div class="summary-card">Century<strong>${filteredCounts.century}</strong></div>
+        <div class="summary-card">Fifty<strong>${filteredCounts.fifty}</strong></div>
+        <div class="summary-card">Cash<strong>Rs. ${totalCash.toLocaleString()}</strong></div>
+      `;
+
+      const tableSummary = Object.entries(tableCounts)
+        .sort((a,b) => Number(a[0])-Number(b[0]))
+        .map(([table, count]) => `Table ${table}: ${count}`)
+        .join(" | ");
+      summary.textContent = `Showing ${totalGames} game reports. All saved totals: Snooker ${counts.snooker}, Century ${counts.century}, Fifty ${counts.fifty}. ${tableSummary || "No table data in this filter."}`;
+
+      if (!filteredGames.length && !filteredCash.length) {
+        body.innerHTML = `<tr><td colspan="10">No report found for selected dates.</td></tr>`;
+        document.getElementById("reports-pagination").innerHTML = "";
+        return;
+      }
+
+      reportDisplayRows = [
+        ...filteredGames.map(row => ({ kind: "game", sortAt: Number(row.createdAt || 0), row })),
+        ...filteredCash.map(row => ({ kind: "cash", sortAt: Number(row.createdAt || 0), row }))
+      ].sort((a, b) => b.sortAt - a.sortAt);
+      reportCurrentPage = 1;
+      renderReportPage();
+    }
+
+    function renderReportPage(page = reportCurrentPage) {
+      const body = document.getElementById("reports-body");
+      const pagination = document.getElementById("reports-pagination");
+      const totalPages = Math.max(1, Math.ceil(reportDisplayRows.length / REPORT_PAGE_SIZE));
+      reportCurrentPage = Math.min(Math.max(1, page), totalPages);
+      const start = (reportCurrentPage - 1) * REPORT_PAGE_SIZE;
+      const pageRows = reportDisplayRows.slice(start, start + REPORT_PAGE_SIZE);
+
+      body.innerHTML = pageRows.map(item => {
+        const row = item.row;
+        if (item.kind === "cash") {
+          return `
+            <tr>
+              <td>${row.date}</td>
+              <td>${row.tableNumber || ""}</td>
+              <td>Cash Collection</td>
+              <td>${row.games || 0} games</td>
+              <td></td>
+              <td>${formatReportDate(row.collectedAt || row.collectedText || row.createdAt)}</td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>Rs. ${Number(row.amount || 0).toLocaleString()}</td>
+            </tr>
+          `;
+        }
+
+        const players = Array.isArray(row.players) ? row.players.map(p => `${p.name} (${p.score || 0})`).join("<br>") : "";
+        const type = String(row.gameType || row.gameLabel || "snooker").toLowerCase();
+        return `
+          <tr>
+            <td>${row.date}</td>
+            <td>${row.tableNumber || ""}</td>
+            <td>${row.gameLabel || type}</td>
+            <td>${players}</td>
+            <td>${formatReportDate(row.startTime || row.startText || row.createdAt)}</td>
+            <td>${formatReportDate(row.endTime || row.endText || row.createdAt)}</td>
+            <td>${formatDuration(row.durationSeconds || 0)}</td>
+            <td>${row.winner || ""}</td>
+            <td>${row.loser || ""}</td>
+            <td></td>
+          </tr>
+        `;
+      }).join("");
+
+      pagination.innerHTML = "";
+      for (let i = 1; i <= totalPages; i++) {
+        const btn = document.createElement("button");
+        btn.className = `page-btn ${i === reportCurrentPage ? "active" : ""}`;
+        btn.textContent = i;
+        btn.onclick = () => renderReportPage(i);
+        pagination.appendChild(btn);
+      }
+    }
+
+    function formatReportDate(value) {
+      if (!value) return "";
+      if (typeof value === "number") return new Date(value).toLocaleString();
+      const parsed = new Date(value);
+      if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleString();
+      return String(value);
+    }
+
+    function formatDuration(seconds) {
+      seconds = Number(seconds || 0);
+      const h = Math.floor(seconds / 3600);
+      const m = Math.floor((seconds % 3600) / 60);
+      const s = seconds % 60;
+      return `${h ? h + "h " : ""}${m ? m + "m " : ""}${s}s`;
+    }
+  </script>
 </body>
-</html>
-    <script  src="./script.js"></script>
-
-  </body>
-  
 </html>
