@@ -53,20 +53,37 @@ function createTableCard(num, data) {
   let html = `
     <h2>ٹیبل ${num}</h2>
     <div class="status">${data.status === "busy" ? "مصروف" : "خالی"}</div>
-    <div class="info-line">کل گیمز: <strong>${data.gamesPlayed || 0}</strong></div>
+    <div class="info-line">کل گیمز کھیلی گئیں: <strong>${data.gamesPlayed || 0}</strong></div>
   `;
 
+  // سب سے زیادہ گیمز جیتنے والے (ٹاپ 5)
   if (data.totalPlayerWins && Object.keys(data.totalPlayerWins).length > 0) {
-    html += `<div class="info-line">ٹاپ ونرز:</div><ul style="margin:8px 0 12px 24px; padding:0; color:#ddd;">`;
+    html += `
+      <div class="info-line" style="margin-top:12px;">سب سے زیادہ گیمز جیتنے والے:</div>
+      <ul style="margin:8px 0 12px 24px; padding:0; color:#90ff9e; list-style:none;">
+    `;
     Object.entries(data.totalPlayerWins)
-      .sort((a,b) => b[1] - a[1])
+      .sort((a, b) => b[1] - a[1])   // زیادہ ون والا اوپر
       .slice(0, 5)
       .forEach(([name, wins]) => {
-        html += `<li>${name} — ${wins} جیت</li>`;
+        html += `<li>${name} — ${wins} گیمز</li>`;
       });
     html += `</ul>`;
   }
 
+  // نئی سیکشن: لوزرز (سب سے زیادہ ہارنے والے)
+  if (data.totalPlayerLosses && Object.keys(data.totalPlayerLosses).length > 0) {
+    html += `<div class="info-line" style="margin-top:12px;">سب سے زیادہ ہارنے والے:</div><ul style="margin:8px 0 12px 24px; padding:0; color:#ff8787;">`;
+    Object.entries(data.totalPlayerLosses)
+      .sort((a,b) => b[1] - a[1])  // زیادہ ہارنے والے اوپر
+      .slice(0, 5)
+      .forEach(([name, losses]) => {
+        html += `<li>${name} — ${losses} ہار</li>`;
+      });
+    html += `</ul>`;
+  }
+
+  // باقی موجودہ کوڈ (currentGame وغیرہ)
   if (data.currentGame) {
     const g = data.currentGame;
     html += `
@@ -83,4 +100,50 @@ function createTableCard(num, data) {
 
   card.innerHTML = html;
   return card;
+}
+
+
+function incrementPlayerWinsAndLosses(winnerName, loserName) {
+    if (!tableNumber) return;
+
+    const tableRef = db.ref(`tables/${tableNumber}`);
+
+    // ونر کی جیت +1
+    if (winnerName && winnerName.trim() !== "") {
+        const safeWinner = winnerName.replace(/[.#$[\]]/g, '_');
+        tableRef.child(`totalPlayerWins/${safeWinner}`)
+            .transaction(count => (count || 0) + 1);
+    }
+
+    // لوزر کی ہار +1
+    if (loserName && loserName.trim() !== "") {
+        const safeLoser = loserName.replace(/[.#$[\]]/g, '_');
+        tableRef.child(`totalPlayerLosses/${safeLoser}`)
+            .transaction(count => (count || 0) + 1);
+    }
+}
+
+function finishGame(winnerName, loserName) {
+    if (!tableNumber) return;
+
+    const tableRef = db.ref(`tables/${tableNumber}`);
+
+    tableRef.transaction(currentTable => {
+        if (!currentTable) {
+            // اگر ٹیبل بالکل نہیں ہے تو نیا بنائیں (بہت کم امکان)
+            currentTable = {
+                status: "free",
+                gamesPlayed: 0
+            };
+        }
+
+        currentTable.gamesPlayed = (currentTable.gamesPlayed || 0) + 1;
+        currentTable.status = "free";
+        currentTable.currentGame = null;
+
+        return currentTable;
+    });
+
+    // الگ سے wins اور losses بڑھائیں (atomic نہیں ہونا ضروری، لیکن transaction محفوظ ہے)
+    incrementPlayerWinsAndLosses(winnerName, loserName);
 }
